@@ -2,14 +2,14 @@
 
 # -*- coding: utf-8 -*-
 """
-This code creates a database with a list of publications data from Google 
+This code creates a database with a list of publications data from Google
 Scholar.
 The data acquired from GS is Title, Citations, Links and Rank.
 It is useful for finding relevant papers by sorting by the number of citations
-This example will look for the top 100 papers related to the keyword, 
+This example will look for the top 100 papers related to the keyword,
 so that you can rank them by the number of citations
 
-As output this program will plot the number of citations in the Y axis and the 
+As output this program will plot the number of citations in the Y axis and the
 rank of the result in the X axis. It also, optionally, export the database to
 a .csv file.
 
@@ -62,6 +62,7 @@ def get_command_line_args():
     parser.add_argument('--startyear', type=int, help='Start year when searching. Default is None')
     parser.add_argument('--endyear', type=int, help='End year when searching. Default is current year')
     parser.add_argument('--debug', action='store_true', help='Debug mode. Used for unit testing. It will get pages stored on web archive')
+    parser.add_argument('--url', type=str, help='If present, then use for searching. Will discard --kw.')
 
     # Parse and read arguments and assign them to variables if exists
     args, _ = parser.parse_known_args()
@@ -97,12 +98,17 @@ def get_command_line_args():
     end_year = ENDYEAR
     if args.endyear:
         end_year=args.endyear
-    
+
+    if args.url:
+        given_url = args.url
+
     debug = DEBUG
     if args.debug:
         debug = True
 
-    return keyword, nresults, save_csv, csvpath, sortby, plot_results, start_year, end_year, debug
+
+
+    return keyword, nresults, save_csv, csvpath, sortby, plot_results, start_year, end_year, debug, given_url
 
 def get_citations(content):
     out = 0
@@ -178,7 +184,7 @@ def get_content_with_selenium(url):
 
 def main():
     # Get command line arguments
-    keyword, number_of_results, save_database, path, sortby_column, plot_results, start_year, end_year, debug = get_command_line_args()
+    keyword, number_of_results, save_database, path, sortby_column, plot_results, start_year, end_year, debug, given_url = get_command_line_args()
 
     # Create main URL based on command line arguments
     if start_year:
@@ -205,17 +211,20 @@ def main():
     venue = []
     publisher = []
     rank = [0]
+    # TODO: handle case when args.url does not exist
+    start_url = f"{given_url}&" + "start={}"
 
     # Get content from number_of_results URLs
     for n in range(0, number_of_results, 10):
         #if start_year is None:
-        url = GSCHOLAR_MAIN_URL.format(str(n), keyword.replace(' ','+'))
+        url = start_url.format(str(n), keyword.replace(' ','+'))
         if debug:
             print("Opening URL:", url)
         #else:
         #    url=GSCHOLAR_URL_YEAR.format(str(n), keyword.replace(' ','+'), start_year=start_year, end_year=end_year)
 
         print("Loading next {} results".format(n+10))
+
         page = session.get(url)#, headers=headers)
         c = page.content
         if any(kw in c.decode('ISO-8859-1') for kw in ROBOT_KW):
@@ -272,7 +281,7 @@ def main():
 
             rank.append(rank[-1]+1)
 
-        # Delay 
+        # Delay
         sleep(0.5)
 
     # Create a dataset and sort by the number of citations
