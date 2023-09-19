@@ -1,0 +1,9 @@
+name: sort-gs
+
+dependencies:
+  - python
+  - requests
+  - beautifulsoup4
+  - pandas
+  - matplotlib
+  - selenium
